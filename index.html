@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Job Copilot</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 28px;
+    }
+
+    p.subtitle {
+      margin-top: 8px;
+      color: #6b7280;
+    }
+
+    .field {
+      margin-top: 18px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    textarea,
+    select,
+    input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .primary {
+      background: #111827;
+      color: white;
+    }
+
+    .secondary {
+      background: #e5e7eb;
+      color: #111827;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .output {
+      margin-top: 24px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 180px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+    }
+
+    .helper {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .error {
+      color: #b91c1c;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>AI Job Copilot</h1>
+      <p class="subtitle">
+        Generate interview answers based on a job description, your experience, and the question you want to answer.
+      </p>
+
+      <div class="field">
+        <label for="jobDescription">Job Description</label>
+        <textarea id="jobDescription" placeholder="Paste the job description here..."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="userExperience">Your Experience</label>
+        <textarea id="userExperience" placeholder="Describe your background, projects, and strengths..."></textarea>
+      </div>
+
+      <div class="field">
+        <label for="question">Interview Question</label>
+        <input id="question" type="text" placeholder="Example: Why do you want this role?" />
+      </div>
+
+      <div class="field">
+        <label for="tone">Tone</label>
+        <select id="tone">
+          <option value="Professional">Professional</option>
+          <option value="Confident">Confident</option>
+          <option value="Concise">Concise</option>
+          <option value="Natural">Natural</option>
+        </select>
+      </div>
+
+      <div class="actions">
+        <button id="generateBtn" class="primary">Generate Answer</button>
+        <button id="shorterBtn" class="secondary">Make Shorter</button>
+        <button id="naturalBtn" class="secondary">Make More Natural</button>
+      </div>
+
+      <div class="helper">
+        For quick testing, you can first use the mock response mode below. After that, replace it with your real API key.
+      </div>
+
+      <div id="errorMessage" class="error"></div>
+      <div id="output" class="output">Your AI-generated answer will appear here.</div>
+    </div>
+  </div>
+
+  <script>
+    const jobDescriptionEl = document.getElementById('jobDescription');
+    const userExperienceEl = document.getElementById('userExperience');
+    const questionEl = document.getElementById('question');
+    const toneEl = document.getElementById('tone');
+    const generateBtn = document.getElementById('generateBtn');
+    const shorterBtn = document.getElementById('shorterBtn');
+    const naturalBtn = document.getElementById('naturalBtn');
+    const outputEl = document.getElementById('output');
+    const errorMessageEl = document.getElementById('errorMessage');
+
+    // ============================================
+    // STEP 1: Replace this with your real API key.
+    // IMPORTANT: Do NOT expose a real API key in a public GitHub repo.
+    // For a proper production app, move API calling to a backend server.
+    // ============================================
+    const OPENAI_API_KEY = 'PASTE_YOUR_API_KEY_HERE';
+
+    // Toggle this to true if you want to test the UI without making real API calls.
+    const USE_MOCK_RESPONSE = true;
+
+    function buildPrompt(action = 'generate') {
+      const jobDescription = jobDescriptionEl.value.trim();
+      const userExperience = userExperienceEl.value.trim();
+      const question = questionEl.value.trim();
+      const tone = toneEl.value;
+      const currentOutput = outputEl.textContent.trim();
+
+      if (!jobDescription || !userExperience || !question) {
+        throw new Error('Please fill in the job description, your experience, and the interview question.');
+      }
+
+      if (action === 'shorter') {
+        return `You are a career coach. Shorten the following interview answer while keeping it professional, relevant, and impactful.\n\nOriginal Answer:\n${currentOutput}`;
+      }
+
+      if (action === 'natural') {
+        return `You are a career coach. Rewrite the following interview answer to sound more natural, human, and confident without becoming too casual.\n\nOriginal Answer:\n${currentOutput}`;
+      }
+
+      return `You are a career coach and interview expert.
+
+Based on the job description and candidate background, generate a strong interview answer.
+
+Job Description:
+${jobDescription}
+
+Candidate Background:
+${userExperience}
+
+Question:
+${question}
+
+Tone:
+${tone}
+
+Instructions:
+- Keep the answer realistic and specific.
+- Make it sound like the candidate, not overly generic.
+- Use clear, professional English.
+- Limit the answer to around 150 to 220 words.
+
+Answer:`;
+    }
+
+    async function getAIResponse(prompt) {
+      if (USE_MOCK_RESPONSE) {
+        return `I am interested in this role because it aligns closely with my experience in building business applications and working with stakeholders to turn requirements into practical solutions. In my current role, I have supported enterprise projects involving workflow applications, process improvements, and user-focused enhancements.\n\nWhat attracts me to this opportunity is the chance to deepen my hands-on software development skills while contributing to meaningful business outcomes. I enjoy understanding user needs, translating them into workable features, and continuously improving solutions based on feedback.\n\nI believe my background gives me a strong foundation in problem solving, collaboration, and delivery, and I am keen to continue growing as a developer in a role where I can contribute while learning from a strong engineering team.`;
+      }
+
+      if (!OPENAI_API_KEY || OPENAI_API_KEY === 'PASTE_YOUR_API_KEY_HERE') {
+        throw new Error('Please add your OpenAI API key before using live AI generation.');
+      }
+
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4.1-mini',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a helpful career coach who writes polished, realistic interview answers.'
+            },
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || 'API request failed.');
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content?.trim() || 'No response received.';
+    }
+
+    async function handleGenerate(action = 'generate') {
+      errorMessageEl.textContent = '';
+      generateBtn.disabled = true;
+      shorterBtn.disabled = true;
+      naturalBtn.disabled = true;
+      outputEl.textContent = 'Generating...';
+
+      try {
+        if ((action === 'shorter' || action === 'natural') && outputEl.textContent.includes('will appear here')) {
+          throw new Error('Please generate an answer first before using rewrite actions.');
+        }
+
+        const prompt = buildPrompt(action);
+        const result = await getAIResponse(prompt);
+        outputEl.textContent = result;
+      } catch (error) {
+        outputEl.textContent = 'Your AI-generated answer will appear here.';
+        errorMessageEl.textContent = error.message;
+      } finally {
+        generateBtn.disabled = false;
+        shorterBtn.disabled = false;
+        naturalBtn.disabled = false;
+      }
+    }
+
+    generateBtn.addEventListener('click', () => handleGenerate('generate'));
+    shorterBtn.addEventListener('click', () => handleGenerate('shorter'));
+    naturalBtn.addEventListener('click', () => handleGenerate('natural'));
+  </script>
+</body>
+</html>
